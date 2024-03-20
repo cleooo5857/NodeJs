@@ -39,6 +39,7 @@ new MongoClient(url)
 /*
 __dirname 절대경로 
 */
+
 app.get("/", (요청, 응답) => {
   응답.sendFile(__dirname + "/index.html");
 });
@@ -48,6 +49,17 @@ app.get("/news", () => {
   db.collection("post").insertOne({ title: "어쩌구" });
   //   응답.send("오늘 비옴?");
 });
+
+async function getNextSequenceValue(sequenceName) {
+  var sequenceDocument = await db
+    .collection("counters")
+    .findOneAndUpdate(
+      { _id: sequenceName },
+      { $inc: { sequence_value: 1 } },
+      { new: true, upsert: true }
+    );
+  return sequenceDocument.value.sequence_value;
+}
 
 app.get("/list", async (요청, 응답) => {
   // 몽고DB post 폴더에 데이터 꺼내오기
@@ -70,10 +82,17 @@ app.post("/add", async (요청, 응답) => {
     if (요청.body.title === "" || 요청.body.content === "") {
       return 응답.send("데이터를 입력해주세요.");
     }
+    // 고유 Id 자동 증가
+    let newId = await getNextSequenceValue("post");
+    let newPost = {
+      _id: newId,
+      title: 요청.body.title,
+      content: 요청.body.content,
+    };
     await db
       .collection("post")
       // insertOne DB에 데이터 저장시키기
-      .insertOne({ title: 요청.body.title, content: 요청.body.content });
+      .insertOne(newPost);
     응답.redirect("/list");
   } catch (e) {
     console.log(e);
@@ -90,4 +109,49 @@ app.get("/detail/:id", async (요청, 응답) => {
     .findOne({ _id: new ObjectId(요청.params.id) });
   console.log(detailpage);
   응답.render("detail.ejs", { detailpage: detailpage });
+});
+
+app.get("/edit/:id", async (요청, 응답) => {
+  console.log("결과가 제대로 나오니 ?");
+
+  let result = await db
+    .collection("post")
+    .findOne({ _id: new ObjectId(요청.params.id) });
+  응답.render("edit.ejs", { result: result });
+});
+
+app.post("/edit", async (요청, 응답) => {
+  console.log(요청.body);
+  let result = await db
+    .collection("post")
+    .updateOne(
+      { _id: new ObjectId(요청.body.id) },
+      { $set: { title: 요청.body.title, content: 요청.body.content } }
+    );
+  console.log(result);
+  응답.redirect("/list");
+});
+
+app.delete("/delete", async (요청, 응답) => {
+  console.log(요청.query.docid);
+  let result = await db
+    .collection("post")
+    .deleteOne({ _id: new ObjectId(요청.query.docid) });
+  응답.send("삭제완료");
+});
+
+// pagenation
+app.get("/list/:id", async (요청, 응답) => {
+  /*
+    limit 5개의 데이터
+    skip  건너띄고 주의 * 성능이 안좋아 적합하지 않다.
+    find 매개변수안에 조건식이 가능하다.
+    */
+  let result = await db
+    .collection("post")
+    .find({ _id: {} })
+    .skip((요청.params.id - 1) * 5)
+    .limit(5)
+    .toArray();
+  응답.render("list.ejs", { board: result });
 });

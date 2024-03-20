@@ -7,16 +7,36 @@
     <link href="main.css" rel="stylesheet" />
   </head>
   <body>
-    <%= JSON.stringify(board) %>
+    <!-- <%= JSON.stringify(board) %> -->
     <div class="white-bg">
+      <% for (let i = 0; i < board.length; i++){ %>
       <div class="list-box">
-        <h4>asdsad</h4>
-        <p>글내용임</p>
+        <h4>
+          <a href="/detail/<%= board[i]._id %>"> <%= board[i].title %> </a>
+          <a href="/edit/<%= board[i]._id %>">✏️</a>
+          <span class="delete" data-id="<%= board[i]._id %>">🗑️</span>
+        </h4>
+        <p><%=board.content %></p>
       </div>
-      <div class="list-box">
-        <h4>글제목임</h4>
-        <p>글내용임</p>
-      </div>
+      <% } %>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      for (let i = 0; i < "<%= board.length %>"; i++) {
+        document
+          .querySelectorAll(".delete")[0]
+          .addEventListener("click", function (e) {
+            fetch("/delete?docid=" + e.target.dataset.id, {
+              method: "DELETE",
+            })
+              .then((r) => r.text())
+              .then((r) => {
+                // 삭제 성공 시 부모 요소 display none
+                // 정상적인 방법은 아닌거같다.
+                e.target.parentElement.parentElement.style.display = "none";
+              });
+          });
+      }
+    </script>
   </body>
 </html>

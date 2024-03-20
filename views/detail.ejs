@@ -4,11 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <link href="main.css" rel="stylesheet" />
   </head>
   <body>
     <%= JSON.stringify(detailpage) %>
     <div class="detail-bg">
-      <h4>글제목임</h4>
+      <h4><%= detailpage.title %></h4>
       <p>글내용임</p>
     </div>
   </body>
